@@ -125,7 +125,7 @@ function displayWeatherData(data) {
             </div>
         </div>
         <div class="hourly-forecast">
-            <h3 class="section-title">Prévisions des 5 prochaines heures</h3>
+            <h3 class="section-title">Prévisions pour toute la journée 24H</h3>
             <div class="hourly-container">
                 ${forecast.forecastday[0].hour.map(hour => `
                     <div class="hour-item">
