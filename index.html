@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MyWeda — Météo</title>
+  <link rel="icon" href="data:," />
+  <style>
+    /* ===== Reset & base ===== */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      -webkit-font-smoothing:antialiased;
+      background: linear-gradient(180deg,#e6f3ff,#f8fbff);
+      color:#0b2340;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      transition:background .3s,color .3s;
+    }
+    .dark body, .dark { background: linear-gradient(180deg,#071428,#0b2130); color:#e8f6ff; }
+
+    /* ===== Container ===== */
+    .app{
+      width:100%;
+      max-width:980px;
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(8px) saturate(120%);
+      border-radius:18px;
+      box-shadow: 0 10px 30px rgba(11,35,64,0.12);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,0.5);
+    }
+    .dark .app{
+      background: linear-gradient(180deg, rgba(10,25,36,0.6), rgba(6,15,22,0.6));
+      border:1px solid rgba(255,255,255,0.04);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:18px 22px;
+    }
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      font-weight:600;
+      font-size:18px;
+    }
+    .logo{
+      width:46px;height:46px;border-radius:10px;
+      display:grid;place-items:center;font-weight:700;
+      background:linear-gradient(135deg,#58a6ff,#3b82f6);
+      color:white;box-shadow:0 6px 18px rgba(59,130,246,0.25)
+    }
+    .dark .logo { background:linear-gradient(135deg,#3b6f8f,#1f6a8e); }
+
+    .controls{display:flex;align-items:center;gap:12px}
+    .search{
+      display:flex;align-items:center;gap:8px;
+      background:rgba(255,255,255,0.6);
+      padding:8px;border-radius:12px;
+      box-shadow: inset 0 -1px 0 rgba(0,0,0,0.02);
+    }
+    .dark .search { background:rgba(255,255,255,0.03); }
+    .search input{
+      border:0;outline:none;background:transparent;font-size:15px;padding:6px 6px;width:220px;
+      color:inherit;
+    }
+    .btn{
+      padding:8px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:600;
+      background:linear-gradient(90deg,#0ea5e9,#3b82f6);color:white;
+    }
+    .dark .btn{ background:linear-gradient(90deg,#0891b2,#0ea5e9); }
+
+    .toggle{
+      display:inline-flex;align-items:center;gap:8px;padding:6px 8px;border-radius:999px;
+      background:linear-gradient(90deg,#f0f9ff,#e6f3ff);font-size:13px;color:#0b2340;
+    }
+    .dark .toggle{ background:linear-gradient(90deg,#0b2130,#072027); color:#dff4ff; }
+
+    main{display:grid;grid-template-columns:1fr 360px;gap:18px;padding:22px}
+    @media (max-width:880px){ main{grid-template-columns:1fr; padding:16px} .controls .search input{width:140px} }
+
+    /* ===== Left (météo) ===== */
+    .current{
+      padding:18px;border-radius:14px;min-height:220px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.4));
+      display:flex;flex-direction:column;gap:12px;align-items:flex-start;
+    }
+    .dark .current{ background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); }
+
+    .city-line{display:flex;align-items:center;gap:10px}
+    .temp{font-size:56px;font-weight:700;line-height:1}
+    .desc{font-size:15px;color:rgba(11,35,64,0.7)}
+    .dark .desc{ color:rgba(232,246,255,0.8) }
+
+    .meta{display:flex;gap:14px;font-size:13px;color:rgba(11,35,64,0.6)}
+    .dark .meta{ color:rgba(232,246,255,0.7) }
+
+    /* weather icon */
+    .weather-visual{margin-left:auto;display:flex;align-items:center;gap:8px}
+    .icon-sun{
+      width:92px;height:92px;border-radius:50%;display:grid;place-items:center;
+      background: radial-gradient(circle at 35% 30%, #fff5cc, #ffd166 40%, #ffb703 100%);
+      box-shadow:0 8px 30px rgba(255,176,3,0.12), inset 0 -6px 18px rgba(0,0,0,0.04);
+      transform:translateY(0);transition:transform .4s;
+    }
+    .dark .icon-sun{ background: radial-gradient(circle at 35% 30%, #fff9e6, #ffd97a 40%, #ffb703 100%); }
+
+    /* ===== Right column: hourly + week ===== */
+    .panel{
+      display:flex;flex-direction:column;gap:12px;
+    }
+    .card{
+      padding:12px;border-radius:12px;background:rgba(255,255,255,0.6);
+    }
+    .dark .card{ background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.02); }
+
+    .hourly{ display:flex;gap:10px;overflow:auto;padding-bottom:6px }
+    .hourly .hour{
+      min-width:84px;padding:10px;border-radius:10px;text-align:center;background:rgba(255,255,255,0.45);
+    }
+    .dark .hourly .hour{ background:rgba(255,255,255,0.02); }
+
+    .daily{ display:grid;grid-template-columns:repeat(2,1fr);gap:8px }
+    .daily .day{ padding:10px;border-radius:10px;background:rgba(255,255,255,0.5); display:flex;justify-content:space-between;align-items:center }
+    .dark .daily .day{ background:rgba(255,255,255,0.02); }
+
+    footer{
+      padding:12px 22px;border-top:1px solid rgba(11,35,64,0.04);
+      display:flex;justify-content:space-between;align-items:center;font-size:13px;
+    }
+    .dark footer{ border-top:1px solid rgba(255,255,255,0.03); }
+
+    /* small touches */
+    .muted{ color:rgba(11,35,64,0.45); font-size:13px }
+    .dark .muted{ color:rgba(232,246,255,0.45); }
+
+    /* scrollbar small */
+    .hourly::-webkit-scrollbar{height:8px}
+    .hourly::-webkit-scrollbar-thumb{background:rgba(11,35,64,0.12);border-radius:10px}
+    .dark .hourly::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06)}
+
+    /* responsive */
+    @media (max-width:520px){
+      .temp{font-size:44px}
+      .icon-sun{width:72px;height:72px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="appRoot">
+    <header>
+      <div class="brand">
+        <div class="logo">MW</div>
+        <div>
+          <div>MyWeda</div>
+          <div style="font-size:12px;color:rgba(11,35,64,0.45)">Météo simple & élégante</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="search" role="search">
+          <input id="cityInput" list="suggestions" placeholder="Rechercher une ville (ex: Paris)" autocomplete="off" />
+          <datalist id="suggestions"></datalist>
+          <button class="btn" id="searchBtn">Rechercher</button>
+        </div>
+
+        <div id="themeToggle" class="toggle" title="Mode clair / sombre" role="button">🌞 <span id="themeLabel">Clair</span></div>
+      </div>
+    </header>
+
+    <main>
+      <section>
+        <div class="current" id="currentCard">
+          <div style="display:flex;align-items:center;width:100%;gap:12px">
+            <div>
+              <div class="city-line">
+                <div style="font-size:15px" id="locationName">Niamey, NE</div>
+                <div class="muted" id="localTime">—</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
+                <div>
+                  <div class="temp" id="tempC">--°C</div>
+                  <div class="desc" id="conditionText">Chargement…</div>
+                </div>
+                <div class="meta">
+                  <div id="feelsLike">—</div>
+                  <div id="humidity">—</div>
+                  <div id="wind">—</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="weather-visual">
+              <div class="icon-sun" id="weatherIcon" aria-hidden="true">
+                <!-- simple decorative sun; we'll replace with emoji text for clarity JS-side -->
+                ☀️
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-weight:600">Prévisions prochaines heures</div>
+            <div class="muted">prochaines 5 heures</div>
+          </div>
+          <div class="hourly" id="hourlyList" style="margin-top:12px">
+            <!-- hourly items injected here -->
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="card">
+          <div style="font-weight:600;margin-bottom:10px">Prévisions 7 jours</div>
+          <div class="daily" id="dailyList">
+            <!-- daily injected -->
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:600">Infos</div>
+          <div style="margin-top:8px;font-size:13px;color:rgba(11,35,64,0.6)">
+            Source: WeatherAPI — résultats approximatifs. Utiliser pour tests & portfolio.
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      <div>© GeekoHub, 2025</div>
+      <div class="muted">MyWeda — Simple. Rapide. Responsive.</div>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+            </html>
